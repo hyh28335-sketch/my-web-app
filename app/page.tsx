@@ -1,6 +1,5 @@
 import FluidArtExperience from "@/components/halftone-waves"
-import Navbar from "@/components/Navbar"
-import MainContent from "@/components/MainContent"
+import AppWrapper from "@/components/AppWrapper"
 
 export default function Home() {
   return (
@@ -12,8 +11,7 @@ export default function Home() {
       
       {/* Content Layer */}
       <div className="relative z-10">
-        <Navbar />
-        <MainContent />
+        <AppWrapper />
       </div>
     </main>
   )

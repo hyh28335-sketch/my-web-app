@@ -1,10 +1,14 @@
-from flask import Flask, jsonify, request, Response, stream_template
+from flask import Flask, jsonify, request, Response, stream_template, session, redirect, url_for
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import os
 import json
 from dotenv import load_dotenv
+from google.auth.transport import requests as google_requests
+from google.oauth2 import id_token
+from google_auth_oauthlib.flow import Flow
+import secrets
 
 import time
 
@@ -1053,6 +1057,164 @@ def get_available_models():
         'models': models
     })
 
+@app.route('/api/google-search', methods=['POST'])
+def google_search():
+    """Google搜索接口"""
+    try:
+        data = request.get_json()
+        query = data.get('query', '').strip()
+        
+        if not query:
+            return jsonify({'error': '搜索关键词不能为空'}), 400
+        
+        # 模拟Google搜索结果（实际项目中需要使用Google Custom Search API）
+        # 这里提供一些示例结果
+        mock_results = [
+            {
+                'title': f'{query} - 维基百科',
+                'url': f'https://zh.wikipedia.org/wiki/{query}',
+                'snippet': f'关于{query}的详细介绍和相关信息。维基百科是一个自由的百科全书，包含了丰富的知识内容。',
+                'displayUrl': 'zh.wikipedia.org'
+            },
+            {
+                'title': f'{query} 相关资讯 - 百度百科',
+                'url': f'https://baike.baidu.com/item/{query}',
+                'snippet': f'{query}的基本概念、发展历史、应用领域等详细信息。百度百科提供权威、准确的知识内容。',
+                'displayUrl': 'baike.baidu.com'
+            },
+            {
+                'title': f'{query} 最新动态 - 知乎',
+                'url': f'https://www.zhihu.com/search?q={query}',
+                'snippet': f'关于{query}的专业讨论和深度分析。知乎汇聚了各领域专家的见解和经验分享。',
+                'displayUrl': 'www.zhihu.com'
+            },
+            {
+                'title': f'{query} 技术文档 - GitHub',
+                'url': f'https://github.com/search?q={query}',
+                'snippet': f'与{query}相关的开源项目和代码示例。GitHub是全球最大的代码托管平台。',
+                'displayUrl': 'github.com'
+            },
+            {
+                'title': f'{query} 学习资源 - CSDN',
+                'url': f'https://so.csdn.net/so/search?q={query}',
+                'snippet': f'{query}的技术教程、实践案例和解决方案。CSDN是专业的IT技术社区。',
+                'displayUrl': 'blog.csdn.net'
+            }
+        ]
+        
+        return jsonify({
+            'success': True,
+            'query': query,
+            'results': mock_results,
+            'total': len(mock_results),
+            'timestamp': datetime.utcnow().isoformat()
+        })
+        
+    except Exception as e:
+        print(f'Google搜索接口出错: {str(e)}')
+        return jsonify({'error': '搜索服务暂时不可用'}), 500
+
+# Google OAuth配置
+GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID')
+GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET')
+GOOGLE_DISCOVERY_URL = "https://accounts.google.com/.well-known/openid_configuration"
+
+# OAuth流程配置
+os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'  # 仅用于开发环境
+
+@app.route('/api/auth/google', methods=['POST'])
+def google_auth():
+    """处理Google OAuth登录"""
+    try:
+        data = request.get_json()
+        token = data.get('token')
+        
+        if not token:
+            return jsonify({'error': '缺少访问令牌'}), 400
+            
+        if not GOOGLE_CLIENT_ID:
+            return jsonify({'error': 'Google OAuth未配置'}), 500
+        
+        # 验证Google ID token
+        try:
+            idinfo = id_token.verify_oauth2_token(
+                token, google_requests.Request(), GOOGLE_CLIENT_ID
+            )
+            
+            # 获取用户信息
+            user_id = idinfo['sub']
+            email = idinfo['email']
+            name = idinfo['name']
+            picture = idinfo.get('picture', '')
+            
+            # 生成会话token
+            session_token = secrets.token_urlsafe(32)
+            
+            # 这里可以将用户信息保存到数据库
+            # 目前先返回用户信息
+            
+            return jsonify({
+                'success': True,
+                'user': {
+                    'id': user_id,
+                    'email': email,
+                    'name': name,
+                    'picture': picture
+                },
+                'token': session_token
+            })
+            
+        except ValueError as e:
+            print(f'Token验证失败: {e}')
+            return jsonify({'error': '无效的访问令牌'}), 401
+            
+    except Exception as e:
+        print(f'Google OAuth错误: {e}')
+        return jsonify({'error': '登录失败'}), 500
+
+@app.route('/api/auth/logout', methods=['POST'])
+def logout():
+    """用户登出"""
+    try:
+        # 清除会话信息
+        session.clear()
+        
+        return jsonify({
+            'success': True,
+            'message': '已成功登出'
+        })
+        
+    except Exception as e:
+        print(f'登出错误: {e}')
+        return jsonify({'error': '登出失败'}), 500
+
+@app.route('/api/auth/user', methods=['GET'])
+def get_current_user():
+    """获取当前登录用户信息"""
+    try:
+        # 从请求头获取token
+        auth_header = request.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return jsonify({'error': '未授权'}), 401
+            
+        token = auth_header.split(' ')[1]
+        
+        # 这里应该验证token并返回用户信息
+        # 目前先返回模拟数据
+        return jsonify({
+            'success': True,
+            'user': {
+                'id': 'mock_user_id',
+                'email': 'user@example.com',
+                'name': '用户',
+                'picture': ''
+            }
+        })
+        
+    except Exception as e:
+        print(f'获取用户信息错误: {e}')
+        return jsonify({'error': '获取用户信息失败'}), 500
+
 @app.route('/api/chat', methods=['POST'])
 def chat():
     """AI聊天接口 - 使用OpenRouter API，集成知识库搜索"""
@@ -1402,6 +1564,7 @@ if __name__ == '__main__':
     print('  PUT  /api/tasks/<id> - 更新任务')
     print('  DELETE /api/tasks/<id> - 删除任务')
     print('  POST /api/search - 搜索笔记')
+    print('  POST /api/google-search - Google搜索')
     print('  POST /api/chat - AI聊天')
     
     # 从环境变量获取端口，默认为5001

@@ -10,6 +10,7 @@ import TodoList from './TodoList';
 import PomodoroTimer from './PomodoroTimer';
 import ProjectManager from './ProjectManager';
 import CardSlider from './CardSlider';
+import GoogleSearchModal from './GoogleSearchModal';
 
 export default function MainContent() {
   const [notes, setNotes] = useState<Note[]>([]);
@@ -21,6 +22,7 @@ export default function MainContent() {
   const [showTodoList, setShowTodoList] = useState(false);
   const [showPomodoroTimer, setShowPomodoroTimer] = useState(false);
   const [showProjectManager, setShowProjectManager] = useState(false);
+  const [showGoogleSearch, setShowGoogleSearch] = useState(false);
 
   // 加载笔记
   useEffect(() => {
@@ -92,6 +94,10 @@ export default function MainContent() {
     setShowProjectManager(true);
   };
 
+  const handleGoogleSearch = () => {
+    setShowGoogleSearch(true);
+  };
+
   const handleSelectNote = (note: Note) => {
     setEditingNote(note);
     setShowNoteEditor(true);
@@ -147,6 +153,18 @@ export default function MainContent() {
             icon: (
               <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            )
+          },
+          {
+            id: 'google-search',
+            title: 'Google搜索',
+            description: '搜索互联网信息，保存有价值的内容',
+            gradient: 'bg-gradient-to-br from-blue-500/20 to-green-500/20 backdrop-blur-md',
+            onClick: handleGoogleSearch,
+            icon: (
+              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0 9c-1.657 0-3-4.03-3-9s1.343-9 3-9m0 9c1.657 0 3 4.03 3 9s-1.343 9-3 9" />
               </svg>
             )
           },
@@ -337,6 +355,12 @@ export default function MainContent() {
       <ProjectManager
         isOpen={showProjectManager}
         onClose={() => setShowProjectManager(false)}
+      />
+
+      {/* Google搜索 */}
+      <GoogleSearchModal
+        isOpen={showGoogleSearch}
+        onClose={() => setShowGoogleSearch(false)}
       />
     </div>
   );
