@@ -1,8 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    appDir: true,
-  },
-}
+  output: 'export',
+  distDir: 'out',
+  images: { unoptimized: true },
+  assetPrefix: './',
+  basePath: '',
+};
 
-module.exports = nextConfig
+module.exports = nextConfig;
