@@ -38,7 +38,7 @@ jobs:
       - name: Build and Export
         run: |
           npm run build
-          npm run export
+          # npm run export
         env:
           NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
 
