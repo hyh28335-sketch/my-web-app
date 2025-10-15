@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useUser } from '../lib/contexts/UserContext';
+import { API_BASE_URL } from '../lib/api';
 
 interface GoogleAuthProps {
   onLogin?: (user: any) => void;
@@ -63,7 +64,7 @@ export default function GoogleAuth({ onLogin, onLogout }: GoogleAuthProps) {
   const handleGoogleLogin = async (response: any) => {
     setIsLoading(true);
     try {
-      const res = await fetch('http://localhost:5001/api/auth/google', {
+      const res = await fetch(`${API_BASE_URL}/api/auth/google`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -92,7 +93,7 @@ export default function GoogleAuth({ onLogin, onLogout }: GoogleAuthProps) {
 
   const handleLogout = async () => {
     try {
-      await fetch('http://localhost:5001/api/auth/logout', {
+      await fetch(`${API_BASE_URL}/api/auth/logout`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('auth_token')}`

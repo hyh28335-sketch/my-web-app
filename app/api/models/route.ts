@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { API_BASE_URL } from '../../../lib/api';
 
 export async function GET(request: NextRequest) {
   try {
     // 代理请求到后端Flask服务器
-    const response = await fetch('http://localhost:5001/api/models', {
+    const response = await fetch(`${API_BASE_URL}/api/models`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

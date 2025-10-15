@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { API_BASE_URL } from '../api';
 
 interface User {
   id: string;
@@ -36,7 +37,7 @@ export function UserProvider({ children }: UserProviderProps) {
       try {
         const token = localStorage.getItem('auth_token');
         if (token) {
-          const response = await fetch('http://localhost:5001/api/auth/user', {
+          const response = await fetch(`${API_BASE_URL}/api/auth/user`, {
             headers: {
               'Authorization': `Bearer ${token}`
             }

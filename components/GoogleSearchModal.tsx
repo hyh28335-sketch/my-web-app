@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../lib/api';
 import { Search, X, ExternalLink, Globe, Clock, Bookmark } from 'lucide-react';
 
 interface GoogleSearchResult {
@@ -97,7 +98,7 @@ const GoogleSearchModal: React.FC<GoogleSearchModalProps> = ({ isOpen, onClose }
     setShowSuggestions(false);
     
     try {
-      const response = await fetch('http://localhost:5001/api/google-search', {
+      const response = await fetch(`${API_BASE_URL}/api/google-search`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -152,7 +153,7 @@ const GoogleSearchModal: React.FC<GoogleSearchModalProps> = ({ isOpen, onClose }
     const noteContent = `# ${result.title}\n\n**来源**: [${result.displayLink}](${result.link})\n\n**摘要**: ${result.snippet}\n\n**搜索关键词**: ${query}\n\n**保存时间**: ${new Date().toLocaleString()}\n\n---\n\n*此内容来自Google搜索结果*`;
     
     try {
-      const response = await fetch('http://localhost:5001/api/notes', {
+      const response = await fetch(`${API_BASE_URL}/api/notes`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
