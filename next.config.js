@@ -6,7 +6,7 @@ const nextConfig = {
   output: 'export',
   images: { unoptimized: true },
   assetPrefix: isGithubPages ? `/${repoName}/` : undefined,
-  basePath: isGithubPages ? `/${repoName}` : undefined,
+  basePath: isGithubPages ? `/${repoName}` : undefined
 };
 
 module.exports = nextConfig;
