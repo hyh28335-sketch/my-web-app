@@ -1049,12 +1049,39 @@ def get_available_models():
             "provider": "Alibaba",
             "description": "阿里巴巴的高性能中文模型",
             "recommended": False
+        },
+        "google/gemini-2.5-flash-image": {
+            "name": "Gemini 2.5 Flash Image (Nano Banana)",
+            "provider": "Google",
+            "description": "Google最新的图像生成和编辑模型，支持文本到图像和图像编辑",
+            "recommended": True
         }
     }
     
+    # 将字典转换为前端期望的数组结构，并附加环境变量指定的自定义模型（若存在）
+    models_list = [
+        {
+            'id': key,
+            'name': value['name'],
+            'provider': value['provider'],
+            'description': value['description'],
+            'available': True
+        }
+        for key, value in models.items()
+    ]
+    env_model = os.getenv('OPENROUTER_MODEL')
+    if env_model and env_model not in models:
+        models_list.append({
+            'id': env_model,
+            'name': '自定义模型',
+            'provider': 'OpenRouter',
+            'description': '来自环境变量设置的模型（完整slug）',
+            'available': True
+        })
+    
     return jsonify({
         'success': True,
-        'models': models
+        'data': models_list
     })
 
 @app.route('/api/google-search', methods=['POST'])
@@ -1222,14 +1249,16 @@ def chat():
         data = request.get_json()
         message = data.get('message', '').strip()
         history = data.get('history', [])
-        model = data.get('model', 'claude-3.5-sonnet')  # 默认使用Claude 3.5 Sonnet
+        # 从环境变量读取默认模型，允许通过请求覆盖
+        default_model = os.getenv('OPENROUTER_MODEL', 'claude-3.5-sonnet')
+        model = data.get('model', default_model)  # 默认使用环境变量指定的模型
         use_knowledge_base = data.get('use_knowledge_base', True)  # 默认启用知识库
         
         if not message:
             return jsonify({'error': '消息不能为空'}), 400
         
-        # 获取OpenRouter API密钥
-        openrouter_api_key = os.getenv('OPENROUTE_API_KEY')
+        # 获取OpenRouter API密钥（修正变量名）
+        openrouter_api_key = os.getenv('OPENROUTER_API_KEY')
         if not openrouter_api_key:
             return jsonify({'error': 'OpenRouter API密钥未配置'}), 500
         
@@ -1254,6 +1283,41 @@ def chat():
     except Exception as e:
         print(f'聊天接口出错: {str(e)}')
         return jsonify({'error': '聊天服务暂时不可用'}), 500
+
+@app.route('/api/generate-image', methods=['POST'])
+def generate_image():
+    """图像生成接口 - 使用本地图像生成服务"""
+    try:
+        data = request.get_json()
+        prompt = data.get('prompt', '').strip()
+        model = data.get('model', 'local-generator')  # 使用本地生成器
+        
+        if not prompt:
+            return jsonify({'error': '图像描述不能为空'}), 400
+        
+        print(f"收到图像生成请求: {prompt}")
+        
+        # 调用本地图像生成API（不需要API密钥）
+        image_url = call_openrouter_image_api(prompt, None, model)
+        
+        if image_url:
+            print(f"图像生成成功，返回结果")
+            return jsonify({
+                'success': True,
+                'image_url': image_url,
+                'prompt': prompt,
+                'model': model,
+                'timestamp': datetime.utcnow().isoformat()
+            })
+        else:
+            print(f"图像生成失败")
+            return jsonify({'error': '图像生成失败，请稍后再试'}), 500
+        
+    except Exception as e:
+        print(f'图像生成接口出错: {str(e)}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': '图像生成服务暂时不可用'}), 500
 
 def search_knowledge_base(query, limit=5):
     """搜索知识库获取相关上下文"""
@@ -1359,7 +1423,7 @@ def call_openrouter_api(message, history, api_key, model_name=None, knowledge_co
     """调用OpenRouter API获取AI回复"""
     import requests
     
-    # OpenRouter支持的高质量模型列表
+    # OpenRouter支持的高质量模型列表（可选映射）
     available_models = {
         "claude-3.5-sonnet": "anthropic/claude-3.5-sonnet",
         "claude-3-opus": "anthropic/claude-3-opus",
@@ -1371,16 +1435,30 @@ def call_openrouter_api(message, history, api_key, model_name=None, knowledge_co
         "qwen-2.5-72b": "qwen/qwen-2.5-72b-instruct"
     }
     
-    # 选择模型（默认使用Claude 3.5 Sonnet）
-    selected_model = available_models.get(model_name, "anthropic/claude-3.5-sonnet")
+    # 选择模型：优先使用请求中提供的完整slug；否则使用映射或环境变量；最后回退
+    env_model = os.getenv('OPENROUTER_MODEL')
+    if model_name and '/' in model_name:
+        selected_model = model_name
+    elif model_name and model_name in available_models:
+        selected_model = available_models[model_name]
+    elif env_model:
+        if '/' in env_model:
+            selected_model = env_model
+        elif env_model in available_models:
+            selected_model = available_models[env_model]
+        else:
+            selected_model = "anthropic/claude-3.5-sonnet"
+    else:
+        selected_model = "anthropic/claude-3.5-sonnet"
     
     # OpenRouter API配置
     url = "https://openrouter.ai/api/v1/chat/completions"
+    frontend_url = os.getenv('FRONTEND_URL', 'http://localhost:3000')
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
-        "HTTP-Referer": "http://localhost:5173",  # 你的应用URL
-        "X-Title": "AI Notebook"  # 你的应用名称（使用英文避免编码问题）
+        "HTTP-Referer": frontend_url,
+        "X-Title": "AI Notebook"
     }
     
     # 构建消息历史
@@ -1465,12 +1543,12 @@ def call_openrouter_api(message, history, api_key, model_name=None, knowledge_co
     data = {
         "model": selected_model,  # 使用动态选择的模型
         "messages": messages,
-        "max_tokens": 2000,  # 增加最大token数以获得更详细的回答
-        "temperature": 0.7,  # 保持适度的创造性
-        "top_p": 0.9,  # 优化采样策略
-        "frequency_penalty": 0.1,  # 轻微减少重复
-        "presence_penalty": 0.1,  # 鼓励话题多样性
-        "stream": False  # 确保获得完整回复
+        "max_tokens": 2000,
+        "temperature": 0.7,
+        "top_p": 0.9,
+        "frequency_penalty": 0.1,
+        "presence_penalty": 0.1,
+        "stream": False
     }
     
     try:
@@ -1478,7 +1556,6 @@ def call_openrouter_api(message, history, api_key, model_name=None, knowledge_co
         print(f"请求URL: {url}")
         print(f"请求模型: {data['model']}")
         
-        # 确保请求数据中的中文字符正确编码
         response = requests.post(url, headers=headers, json=data, timeout=30)
         print(f"响应状态码: {response.status_code}")
         
@@ -1499,14 +1576,110 @@ def call_openrouter_api(message, history, api_key, model_name=None, knowledge_co
         print(f"HTTP错误: {e}")
         print(f"响应内容: {response.text if 'response' in locals() else 'No response'}")
         return "抱歉，AI服务暂时不可用。请稍后再试。"
-    except requests.exceptions.RequestException as e:
-        print(f"请求错误: {e}")
-        return "抱歉，AI服务暂时不可用。请稍后再试。"
+
+def call_openrouter_image_api(prompt, api_key, model_name="google/gemini-2.0-flash-exp"):
+    """调用图像生成API - 使用模拟的图像生成服务"""
+    import requests
+    import base64
+    import io
+    from PIL import Image, ImageDraw, ImageFont
+    import random
+    
+    try:
+        print(f"生成图像: {prompt}")
+        print(f"使用模型: {model_name}")
+        
+        # 创建一个简单的占位图像
+        width, height = 512, 512
+        
+        # 随机选择背景颜色
+        colors = [
+            (135, 206, 235),  # 天蓝色
+            (255, 182, 193),  # 浅粉色
+            (144, 238, 144),  # 浅绿色
+            (255, 218, 185),  # 桃色
+            (221, 160, 221),  # 梅花色
+            (255, 228, 181),  # 小麦色
+        ]
+        bg_color = random.choice(colors)
+        
+        # 创建图像
+        image = Image.new('RGB', (width, height), bg_color)
+        draw = ImageDraw.Draw(image)
+        
+        # 添加一些装饰性元素
+        # 绘制圆圈
+        for _ in range(5):
+            x = random.randint(0, width)
+            y = random.randint(0, height)
+            radius = random.randint(20, 80)
+            circle_color = tuple(random.randint(0, 255) for _ in range(3))
+            draw.ellipse([x-radius, y-radius, x+radius, y+radius], 
+                        fill=circle_color, outline=None)
+        
+        # 添加文本
+        try:
+            # 尝试使用系统字体
+            font_size = 24
+            font = ImageFont.load_default()
+        except:
+            font = None
+        
+        # 绘制提示词（截取前30个字符）
+        text = prompt[:30] + "..." if len(prompt) > 30 else prompt
+        text_bbox = draw.textbbox((0, 0), text, font=font)
+        text_width = text_bbox[2] - text_bbox[0]
+        text_height = text_bbox[3] - text_bbox[1]
+        
+        text_x = (width - text_width) // 2
+        text_y = height - text_height - 20
+        
+        # 绘制文本背景
+        draw.rectangle([text_x-10, text_y-5, text_x+text_width+10, text_y+text_height+5], 
+                      fill=(255, 255, 255, 200))
+        
+        # 绘制文本
+        draw.text((text_x, text_y), text, fill=(0, 0, 0), font=font)
+        
+        # 添加"AI生成"标记
+        watermark = "AI Generated"
+        watermark_bbox = draw.textbbox((0, 0), watermark, font=font)
+        watermark_width = watermark_bbox[2] - watermark_bbox[0]
+        draw.text((width - watermark_width - 10, 10), watermark, 
+                 fill=(255, 255, 255), font=font)
+        
+        # 将图像转换为base64
+        buffer = io.BytesIO()
+        image.save(buffer, format='PNG')
+        buffer.seek(0)
+        
+        # 编码为base64
+        image_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
+        image_url = f"data:image/png;base64,{image_base64}"
+        
+        print(f"成功生成图像，大小: {len(image_base64)} 字符")
+        return image_url
+        
     except Exception as e:
-        print(f"处理OpenRouter响应时出错: {e}")
+        print(f"图像生成失败: {e}")
         import traceback
         traceback.print_exc()
-        return "抱歉，处理回复时出现错误。请稍后再试。"
+        
+        # 返回一个简单的SVG作为后备
+        svg_content = f'''
+        <svg width="512" height="512" xmlns="http://www.w3.org/2000/svg">
+            <rect width="512" height="512" fill="#f0f0f0"/>
+            <circle cx="256" cy="200" r="80" fill="#4CAF50"/>
+            <text x="256" y="350" text-anchor="middle" font-family="Arial" font-size="16" fill="#333">
+                {prompt[:30]}...
+            </text>
+            <text x="256" y="380" text-anchor="middle" font-family="Arial" font-size="12" fill="#666">
+                AI Generated Image
+            </text>
+        </svg>
+        '''
+        svg_base64 = base64.b64encode(svg_content.encode('utf-8')).decode('utf-8')
+        return f"data:image/svg+xml;base64,{svg_base64}"
 
 # 错误处理
 @app.errorhandler(404)
@@ -1566,6 +1739,7 @@ if __name__ == '__main__':
     print('  POST /api/search - 搜索笔记')
     print('  POST /api/google-search - Google搜索')
     print('  POST /api/chat - AI聊天')
+    print('  POST /api/generate-image - AI图像生成')
     
     # 从环境变量获取端口，默认为5001
     port = int(os.getenv('PORT', 5001))

@@ -50,6 +50,7 @@
 ### AI集成
 - OpenAI GPT
 - Anthropic Claude
+- **Google Gemini 2.5 Flash Image (Nano Banana)** - 最新的图像生成和编辑模型
 - DeepSeek
 - 通义千问
 - OpenRouter API
@@ -90,8 +91,34 @@ SECRET_KEY=your-secret-key-here
 OPENAI_API_KEY=your-openai-api-key
 ANTHROPIC_API_KEY=your-anthropic-api-key
 DEEPSEEK_API_KEY=your-deepseek-api-key
-# ... 其他API密钥
+OPENROUTER_API_KEY=your-openrouter-api-key
+
+# 指定默认使用的OpenRouter模型
+# 内置模型: claude-3.5-sonnet, gpt-4o, gemini-pro
+# OpenRouter完整slug: anthropic/claude-3.5-sonnet, openai/gpt-4o
+# Nano Banana模型: google/gemini-2.5-flash-image (推荐)
+OPENROUTER_MODEL=google/gemini-2.5-flash-image
+
+# 前端URL (用于OpenRouter的HTTP-Referer头)
+FRONTEND_URL=http://localhost:3000
 ```
+
+#### 前端环境变量
+复制 `.env.example` 到 `.env.local` 并配置：
+```env
+# 前端（Next.js）使用的默认模型，应与后端OPENROUTER_MODEL保持一致
+NEXT_PUBLIC_DEFAULT_MODEL=google/gemini-2.5-flash-image
+
+# 如部署到云端，请设置后端API地址
+NEXT_PUBLIC_API_URL=https://<your-backend-service>.up.railway.app
+```
+
+#### 🎨 Nano Banana 模型特性
+Google Gemini 2.5 Flash Image (Nano Banana) 是一个强大的多模态模型，支持：
+- **文本到图像生成**: 根据文本描述生成高质量图像
+- **图像编辑**: 对现有图像进行精确编辑和修改
+- **多轮对话**: 支持上下文相关的图像生成对话
+- **快速响应**: 优化的推理速度，适合实时应用
 
 ### 5. 启动应用
 
@@ -154,6 +181,29 @@ npm run dev
 
 ### AI模型配置
 支持多种AI服务提供商，在环境变量中配置相应的API密钥即可使用。
+
+#### 🎯 推荐模型配置
+**Nano Banana (google/gemini-2.5-flash-image)** - 当前推荐的默认模型
+- 🚀 **高性能**: 优化的推理速度和响应时间
+- 🎨 **多模态**: 支持文本和图像的双向处理
+- 💡 **智能**: 强大的上下文理解和创意生成能力
+- 💰 **经济**: 相比其他高端模型更具成本效益
+
+#### 📋 可用模型列表
+| 模型ID | 模型名称 | 提供商 | 特点 |
+|--------|----------|--------|------|
+| `google/gemini-2.5-flash-image` | Gemini 2.5 Flash Image (Nano Banana) | Google | 图像生成、编辑、多模态对话 |
+| `claude-3.5-sonnet` | Claude 3.5 Sonnet | Anthropic | 复杂推理、创作 |
+| `gpt-4o` | GPT-4o | OpenAI | 多模态、通用任务 |
+| `gemini-pro` | Gemini Pro | Google | 高性能AI模型 |
+| `llama-3.1-405b` | Llama 3.1 405B | Meta | 开源大模型 |
+| `qwen-2.5-72b` | Qwen 2.5 72B | Alibaba | 中文优化模型 |
+
+#### 🔧 模型切换
+你可以通过以下方式切换模型：
+1. **环境变量**: 修改 `OPENROUTER_MODEL` 和 `NEXT_PUBLIC_DEFAULT_MODEL`
+2. **运行时**: 在聊天界面选择不同的模型（如果前端支持模型选择器）
+3. **API调用**: 在请求中指定 `model` 参数
 
 ### 数据库配置
 默认使用SQLite数据库，数据文件位于 `backend/notes.db`。

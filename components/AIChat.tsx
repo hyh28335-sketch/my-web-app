@@ -58,7 +58,8 @@ export default function AIChat({ isOpen, onClose }: AIChatProps) {
         },
         body: JSON.stringify({
           message: userMessage.content,
-          model: 'claude-3.5-sonnet' // 使用高质量的Claude模型
+          // 允许通过环境变量设置默认模型
+          model: process.env.NEXT_PUBLIC_DEFAULT_MODEL || 'claude-3.5-sonnet'
         }),
       });
 

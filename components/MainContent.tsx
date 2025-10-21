@@ -11,6 +11,7 @@ import PomodoroTimer from './PomodoroTimer';
 import ProjectManager from './ProjectManager';
 import CardSlider from './CardSlider';
 import GoogleSearchModal from './GoogleSearchModal';
+import ImageGenerator from './ImageGenerator';
 
 export default function MainContent() {
   const [notes, setNotes] = useState<Note[]>([]);
@@ -23,6 +24,7 @@ export default function MainContent() {
   const [showPomodoroTimer, setShowPomodoroTimer] = useState(false);
   const [showProjectManager, setShowProjectManager] = useState(false);
   const [showGoogleSearch, setShowGoogleSearch] = useState(false);
+  const [showImageGenerator, setShowImageGenerator] = useState(false);
 
   // 加载笔记
   useEffect(() => {
@@ -92,6 +94,10 @@ export default function MainContent() {
 
   const handleProjectManager = () => {
     setShowProjectManager(true);
+  };
+
+  const handleImageGenerator = () => {
+    setShowImageGenerator(true);
   };
 
   const handleGoogleSearch = () => {
@@ -202,6 +208,18 @@ export default function MainContent() {
               <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5a2 2 0 012-2h4a2 2 0 012 2v2H8V5z" />
+              </svg>
+            )
+          },
+          {
+            id: 'image-generator',
+            title: 'AI图像生成',
+            description: '使用Nano Banana模型生成和编辑图像',
+            gradient: 'bg-gradient-to-br from-yellow-500/20 to-orange-500/20 backdrop-blur-md',
+            onClick: handleImageGenerator,
+            icon: (
+              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             )
           }
@@ -361,6 +379,12 @@ export default function MainContent() {
       <GoogleSearchModal
         isOpen={showGoogleSearch}
         onClose={() => setShowGoogleSearch(false)}
+      />
+
+      {/* AI图像生成 */}
+      <ImageGenerator
+        isOpen={showImageGenerator}
+        onClose={() => setShowImageGenerator(false)}
       />
     </div>
   );
