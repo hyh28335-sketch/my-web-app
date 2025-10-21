@@ -1,8 +1,43 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useRef } from 'react';
+import LoginModal from './LoginModal';
+import GoogleAuth from './GoogleAuth';
 
-export default function Navbar() {
+interface User {
+  id: string;
+  email: string;
+  name: string;
+  picture: string;
+}
+
+interface NavbarProps {
+  onGoogleSearch?: () => void;
+}
+
+export default function Navbar({ onGoogleSearch }: NavbarProps) {
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+
+  const handleLogin = (userData: User) => {
+    setUser(userData);
+    setIsLoginModalOpen(false);
+    console.log('用户登录成功:', userData);
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    console.log('用户已登出');
+  };
+
+  const handleOpenLoginModal = () => {
+    setIsLoginModalOpen(true);
+  };
+
+  const handleCloseLoginModal = () => {
+    setIsLoginModalOpen(false);
+  };
+
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white/10 backdrop-blur-md border-b border-white/20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -25,11 +60,15 @@ export default function Navbar() {
               </svg>
               <span>我的个人工作台</span>
             </button>
-            <button className="text-white/80 hover:text-white transition-colors duration-200 flex items-center space-x-2">
+
+            <button 
+              onClick={onGoogleSearch}
+              className="text-white/80 hover:text-white transition-colors duration-200 flex items-center space-x-2"
+            >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0 9c-1.657 0-3-4.03-3-9s1.343-9 3-9m0 9c1.657 0 3 4.03 3 9s-1.343 9-3 9" />
               </svg>
-              <span>搜索</span>
+              <span>Google搜索</span>
             </button>
             <button className="text-white/80 hover:text-white transition-colors duration-200 flex items-center space-x-2">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -42,12 +81,29 @@ export default function Navbar() {
 
           {/* User Profile */}
           <div className="flex items-center space-x-3">
-            <button className="bg-white/20 hover:bg-white/30 transition-colors duration-200 px-4 py-2 rounded-lg text-white text-sm font-medium">
-              登录
-            </button>
-            <div className="w-8 h-8 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full flex items-center justify-center">
-              <span className="text-white text-sm font-medium">U</span>
-            </div>
+            {user ? (
+              <div className="flex items-center space-x-3">
+                <img
+                  src={user.picture}
+                  alt={user.name}
+                  className="w-8 h-8 rounded-full border-2 border-white/20"
+                />
+                <span className="text-white font-medium hidden sm:block">{user.name}</span>
+                <button
+                  onClick={handleLogout}
+                  className="text-white/80 hover:text-white transition-colors duration-200 text-sm"
+                >
+                  登出
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={handleOpenLoginModal}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors duration-200 font-medium"
+              >
+                登录
+              </button>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -60,6 +116,13 @@ export default function Navbar() {
           </div>
         </div>
       </div>
+
+      {/* 登录模态框 */}
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onClose={handleCloseLoginModal}
+        onLogin={handleLogin}
+      />
     </nav>
   );
 }

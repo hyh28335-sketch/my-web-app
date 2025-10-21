@@ -59,4 +59,23 @@ export async function apiDelete<T>(endpoint: string): Promise<T> {
   return apiRequest<T>(endpoint, { method: 'DELETE' });
 }
 
+// 图像生成API
+export interface ImageGenerationRequest {
+  prompt: string;
+  model?: string;
+}
+
+export interface ImageGenerationResponse {
+  success: boolean;
+  image_url?: string;
+  prompt: string;
+  model: string;
+  timestamp: string;
+  error?: string;
+}
+
+export async function generateImage(request: ImageGenerationRequest): Promise<ImageGenerationResponse> {
+  return apiPost<ImageGenerationResponse>('/api/generate-image', request);
+}
+
 export { API_BASE_URL };

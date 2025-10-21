@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { API_BASE_URL } from '../../../lib/api';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
     // 代理请求到后端Flask服务器
-    const response = await fetch('http://localhost:5001/api/chat', {
+    const response = await fetch(`${API_BASE_URL}/api/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

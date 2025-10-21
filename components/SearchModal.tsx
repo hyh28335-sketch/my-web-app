@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from '../lib/api';
 import { Search, X, FileText, Calendar } from 'lucide-react';
 
 interface Note {
@@ -37,7 +38,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ isOpen, onClose, onSelectNote
     
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:5001/api/search', {
+      const response = await fetch(`${API_BASE_URL}/api/search`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
